@@ -14,13 +14,13 @@ async fn main() {
 
     // routing
     let app = app::app();
-    
+
     // listner bind
     let listner = tokio::net::TcpListener::bind("127.0.0.1:3000")
-    .await
-    .unwrap();
+        .await
+        .unwrap();
     info!("listening on {:?}", &listner);
 
-    // remember to set shutdou signal 
+    // remember to set shutdou signal
     axum::serve(listner, app).await.unwrap();
 }
