@@ -1,6 +1,8 @@
 use axum_login::tracing::info;
 use tracing_subscriber::filter::LevelFilter;
 
+use crate::app::App;
+
 mod app;
 mod users;
 mod web;
@@ -13,7 +15,8 @@ async fn main() {
         .init();
 
     // routing
-    let app = app::app();
+    let app_db = App::new().await.unwrap();
+    let app = app_db.serve().await.unwrap();
 
     // listner bind
     let listner = tokio::net::TcpListener::bind("127.0.0.1:3000")

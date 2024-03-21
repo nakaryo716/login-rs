@@ -24,7 +24,7 @@ impl App {
         let deletion_task = tokio::task::spawn(
             session_store
                 .clone()
-                .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
+                .continuously_delete_expired(tokio::time::Duration::from_secs(60))
         );
 
         let key = Key::generate();
@@ -39,7 +39,7 @@ impl App {
 
         let app = protected::router()
             .route_layer(login_required!(Backend, login_url = "/login"))
-            .merge(other)
+            .merge()
             .layer(auth_layer);
 
         deletion_task.await??;
@@ -47,7 +47,7 @@ impl App {
     }
 }
 
-// Todo that I shoul implment
+// Todo that I shoud implment
 // define Database Struct
 
 // implment for Database Struct
