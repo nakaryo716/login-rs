@@ -2,6 +2,7 @@ use std::{
     collections::HashMap, error::Error, sync::{atomic::AtomicI32, Arc, Mutex}
 };
 
+use axum::extract::FromRef;
 use serde::{Deserialize, Serialize};
 
 static USER_ID_PROVIDER: AtomicI32 = AtomicI32::new(0);
@@ -9,20 +10,20 @@ static USER_ID_PROVIDER: AtomicI32 = AtomicI32::new(0);
 // ユーザー
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct User {
-    user_id: i32,
-    user_name: String,
+    pub user_id: i32,
+    pub user_name: String,
 }
 
 // 新規作成
 #[derive(Debug, Clone, Deserialize)]
 pub struct CreateUser {
-    user_name: String,
+    pub user_name: String,
 }
 
 // ユーザデータベース
 #[derive(Debug, Clone)]
 pub struct UserDb {
-    pool: Arc<Mutex<HashMap<i32, User>>>,
+    pub pool: Arc<Mutex<HashMap<i32, User>>>,
 }
 
 impl UserDb {
@@ -49,10 +50,10 @@ impl UserDb {
     }
 
     pub fn get_user_by_id(&self, id: i32) -> Result<Option<User>, Box<dyn Error>> {
-        let optional_user = None;
+        let optional_user;
         {
             let db = self.pool.lock().unwrap();
-            let optional_user = db.get(&id).clone();
+            optional_user = db.get(&id).map(|e| e.clone());
         }
 
         Ok(optional_user)
@@ -61,42 +62,60 @@ impl UserDb {
 
 // セッション管理するためのDB
 #[derive(Debug, Clone)]
-struct SessionDb {
+pub struct SessionDb {
     pub pool: Arc<Mutex<HashMap<String, User>>>,
 }
 
 impl SessionDb {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             pool: Arc::default(),
         }
     }
 
-    fn insert_session_info(&self, session_id: String, user_data: User) -> Result<(), Box<dyn Error>>{
+    pub fn insert_session_info(&self, session_id: String, user_data: User) -> Result<(), Box<dyn Error>>{
         let mut db = self.pool.lock().unwrap();
         db.insert(session_id, user_data).unwrap();
         Ok(())
+    }
+
+    pub fn get_session(&self, session_id: String) -> Result<Option<User>, Box<dyn Error>> {
+        let user;
+        {
+            let db = self.pool.lock().unwrap();
+            user = db.get(&session_id).map(|user| user.clone());
+        }
+        Ok(user)
+    }
+}
+
+impl FromRef<UserDb> for SessionDb {
+    fn from_ref(input: &UserDb) -> Self {
+        let pool = input.pool.clone();
+        SessionDb {
+           pool,
+        }
     }
 }
 
 static TODO_ID_PROVIDER: AtomicI32 = AtomicI32::new(0);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct Todo {
+pub struct Todo {
     todo_id: i32,
     user_id: i32,
     text: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
-struct CreateTodo {
+pub struct CreateTodo {
     user_id: i32,
     text: String,
 }
 
 //　Todoを格納するためのDB
 #[derive(Debug, Clone)]
-struct TodoDb {
+pub struct TodoDb {
     pool: Arc<Mutex<HashMap<i32, Todo>>>,
 }
 
