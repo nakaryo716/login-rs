@@ -8,8 +8,8 @@ use crate::repository::{CreateTodo, CreateUser, SessionDb, TodoDb, UserDb};
 
 // 新規ユーザー作成
 pub async fn create_user_handle(
-    Json(payload): Json<CreateUser>,
     State(user_db): State<UserDb>,
+    Json(payload): Json<CreateUser>,
 ) -> Result<impl IntoResponse, StatusCode> {
     let user = user_db
         .create_user(payload)
@@ -21,10 +21,10 @@ const SESSION_ID_KEY: &str = "text_session_id";
 
 // セッション作成(ログイン)
 pub async fn create_session_handle(
-    Path(user_id): Path<i32>,
     State(user_db): State<UserDb>,
     State(session_db): State<SessionDb>,
     jar: CookieJar,
+    Path(user_id): Path<String>,
 ) -> Result<impl IntoResponse, StatusCode> {
     // dbからユーザがあるかをidで認証
     let unchecked_user = user_db
@@ -57,10 +57,11 @@ pub async fn create_session_handle(
 
 // Todoの作成
 pub async fn post_todo_handle(
-    Json(payload): Json<CreateTodo>,
-    State(todo_db): State<TodoDb>,
+    State(user_db): State<UserDb>,
     State(session_db): State<SessionDb>,
+    State(todo_db): State<TodoDb>,
     jar: CookieJar,
+    Json(payload): Json<CreateTodo>,
 ) -> Result<impl IntoResponse, StatusCode> { 
     // jarからのcookie取り出し
     let cookie_value = match jar.get(SESSION_ID_KEY) {

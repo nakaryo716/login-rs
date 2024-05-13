@@ -10,7 +10,7 @@ static USER_ID_PROVIDER: AtomicI32 = AtomicI32::new(0);
 // ユーザー
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct User {
-    pub user_id: i32,
+    pub user_id: String,
     pub user_name: String,
 }
 
@@ -23,7 +23,7 @@ pub struct CreateUser {
 // ユーザデータベース
 #[derive(Debug, Clone)]
 pub struct UserDb {
-    pub pool: Arc<Mutex<HashMap<i32, User>>>,
+    pub pool: Arc<Mutex<HashMap<String, User>>>,
 }
 
 impl UserDb {
@@ -35,21 +35,25 @@ impl UserDb {
 
     pub fn create_user(&self, payload: CreateUser) -> Result<User, Box<dyn Error>> {
         let created_id = USER_ID_PROVIDER.load(std::sync::atomic::Ordering::Relaxed);
+        let created_s_id = created_id.to_string();
+
         let user = User {
-            user_id: created_id,
+            user_id: created_s_id.clone(),
             user_name: payload.user_name,
         };
 
+        println!("{:?}", user);
+
         {
             let mut db = self.pool.lock().unwrap();
-            db.insert(user.user_id, user.clone()).unwrap();
+            db.insert(created_s_id, user.clone());
         }
 
         USER_ID_PROVIDER.store(created_id + 1, std::sync::atomic::Ordering::Relaxed);
         Ok(user)
     }
 
-    pub fn get_user_by_id(&self, id: i32) -> Result<Option<User>, Box<dyn Error>> {
+    pub fn get_user_by_id(&self, id: String) -> Result<Option<User>, Box<dyn Error>> {
         let optional_user;
         {
             let db = self.pool.lock().unwrap();
@@ -75,7 +79,7 @@ impl SessionDb {
 
     pub fn insert_session_info(&self, session_id: String, user_data: User) -> Result<(), Box<dyn Error>>{
         let mut db = self.pool.lock().unwrap();
-        db.insert(session_id, user_data).unwrap();
+        db.insert(session_id, user_data);
         Ok(())
     }
 
@@ -103,7 +107,7 @@ static TODO_ID_PROVIDER: AtomicI32 = AtomicI32::new(0);
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Todo {
     todo_id: i32,
-    user_id: i32,
+    user_id: String,
     text: String,
 }
 

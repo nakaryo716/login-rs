@@ -1,6 +1,6 @@
-use axum::{routing::get, Router};
+use axum::{routing::{get, post}, Router};
 
-use crate::{handler::create_session_handle, repository::{SessionDb, TodoDb, UserDb}};
+use crate::{handler::{create_session_handle, create_user_handle, post_todo_handle}, repository::{SessionDb, TodoDb, UserDb}};
 
 pub fn service(
     user_db: UserDb,
@@ -8,7 +8,9 @@ pub fn service(
     todo_db: TodoDb,
 ) -> Router {
     Router::new()
-        .route("/sign", get(create_session_handle))
+        .route("/sign/:id", get(create_session_handle))
+        .route("/user/create", post(create_user_handle))
+        // .route("/todo", post(post_todo_handle))
         .with_state(user_db)
         .with_state(todo_db)
         .with_state(session_db)
