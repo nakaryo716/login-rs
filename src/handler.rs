@@ -1,4 +1,9 @@
-use axum::{extract::{Path, State}, http::StatusCode, response::IntoResponse, Json};
+use axum::{
+    extract::{Path, State},
+    http::StatusCode,
+    response::IntoResponse,
+    Json,
+};
 use axum_extra::extract::CookieJar;
 use cookie::Cookie;
 use password_auth::generate_hash;
@@ -35,7 +40,7 @@ pub async fn create_session_handle(
         Some(user) => user,
         None => {
             return Err(StatusCode::NOT_FOUND);
-        },
+        }
     };
 
     // session_idの作成
@@ -57,23 +62,22 @@ pub async fn create_session_handle(
 
 // Todoの作成
 pub async fn post_todo_handle(
-    State(user_db): State<UserDb>,
     State(session_db): State<SessionDb>,
     State(todo_db): State<TodoDb>,
     jar: CookieJar,
     Json(payload): Json<CreateTodo>,
-) -> Result<impl IntoResponse, StatusCode> { 
+) -> Result<impl IntoResponse, StatusCode> {
     // jarからのcookie取り出し
     let cookie_value = match jar.get(SESSION_ID_KEY) {
         Some(session_id) => session_id.value(),
         None => return Err(StatusCode::UNAUTHORIZED),
     };
-    
+
     // 取り出したcookie valueと保存されているsession_idがあるかを見る
     // なかったらガード
     let uncheked_auth_user = session_db
-    .get_session(cookie_value.to_string())
-    .map_err(|_e| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .get_session(cookie_value.to_string())
+        .map_err(|_e| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let user = match uncheked_auth_user {
         Some(user) => user,
@@ -82,8 +86,8 @@ pub async fn post_todo_handle(
 
     // TODOデータベースに保存
     let todo = todo_db
-    .create_todo(payload, user)
-    .map_err(|_e| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .create_todo(payload, user)
+        .map_err(|_e| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     Ok((StatusCode::OK, Json(todo)))
 }
@@ -97,5 +101,3 @@ pub async fn get_all_todo_handle(
 
     Ok((StatusCode::OK, Json(todos)))
 }
-
-

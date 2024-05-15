@@ -1,8 +1,9 @@
 use std::{
-    collections::HashMap, error::Error, sync::{atomic::AtomicI32, Arc, Mutex}
+    collections::HashMap,
+    error::Error,
+    sync::{atomic::AtomicI32, Arc, Mutex},
 };
 
-use axum::extract::FromRef;
 use serde::{Deserialize, Serialize};
 
 static USER_ID_PROVIDER: AtomicI32 = AtomicI32::new(0);
@@ -77,7 +78,11 @@ impl SessionDb {
         }
     }
 
-    pub fn insert_session_info(&self, session_id: String, user_data: User) -> Result<(), Box<dyn Error>>{
+    pub fn insert_session_info(
+        &self,
+        session_id: String,
+        user_data: User,
+    ) -> Result<(), Box<dyn Error>> {
         let mut db = self.pool.lock().unwrap();
         db.insert(session_id, user_data);
         Ok(())
@@ -93,15 +98,6 @@ impl SessionDb {
     }
 }
 
-impl FromRef<UserDb> for SessionDb {
-    fn from_ref(input: &UserDb) -> Self {
-        let pool = input.pool.clone();
-        SessionDb {
-           pool,
-        }
-    }
-}
-
 static TODO_ID_PROVIDER: AtomicI32 = AtomicI32::new(0);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -113,14 +109,13 @@ pub struct Todo {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct CreateTodo {
-    user_id: i32,
     text: String,
 }
 
 //　Todoを格納するためのDB
 #[derive(Debug, Clone)]
 pub struct TodoDb {
-    pool: Arc<Mutex<HashMap<i32, Todo>>>,
+    pub pool: Arc<Mutex<HashMap<i32, Todo>>>,
 }
 
 impl TodoDb {
@@ -151,7 +146,7 @@ impl TodoDb {
     pub fn read_todo(&self) -> Result<Vec<Todo>, Box<dyn Error>> {
         let todo: Vec<Todo>;
         {
-            let db  = self.pool.lock().unwrap();
+            let db = self.pool.lock().unwrap();
             todo = db.iter().map(|(_id, todo)| todo.clone()).collect();
         }
         Ok(todo)
