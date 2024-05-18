@@ -4,24 +4,25 @@ use std::{
     sync::{atomic::AtomicI32, Arc, Mutex},
 };
 
+use axum::extract::FromRef;
 use serde::{Deserialize, Serialize};
 
 static USER_ID_PROVIDER: AtomicI32 = AtomicI32::new(0);
 
-// ユーザー
+// ユーザー型
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct User {
     pub user_id: String,
     pub user_name: String,
 }
 
-// 新規作成
+// 新規作成をする際の型
 #[derive(Debug, Clone, Deserialize)]
 pub struct CreateUser {
     pub user_name: String,
 }
 
-// ユーザデータベース
+// ユーザ情報を保存するDb
 #[derive(Debug, Clone)]
 pub struct UserDb {
     pub pool: Arc<Mutex<HashMap<String, User>>>,
@@ -150,5 +151,39 @@ impl TodoDb {
             todo = db.iter().map(|(_id, todo)| todo.clone()).collect();
         }
         Ok(todo)
+    }
+}
+
+
+#[derive(Debug, Clone)]
+pub struct AppState {
+    pub user_db: UserDb,
+    pub session_db: SessionDb,
+    pub todo_db: TodoDb,
+}
+
+// RouterでStateを付与する際にAppStateを渡すのではなく、
+// State<UserDb>のようにするためにFromRefトレイトを実装
+impl FromRef<AppState> for UserDb {
+    fn from_ref(input: &AppState) -> Self {
+        UserDb {
+            pool: input.user_db.pool.clone(),
+        }
+    }
+}
+
+impl FromRef<AppState> for SessionDb {
+    fn from_ref(input: &AppState) -> Self {
+        SessionDb {
+            pool: input.session_db.pool.clone(),
+        }
+    }
+}
+
+impl FromRef<AppState> for TodoDb {
+    fn from_ref(input: &AppState) -> Self {
+        TodoDb {
+            pool: input.todo_db.pool.clone(),
+        }
     }
 }
